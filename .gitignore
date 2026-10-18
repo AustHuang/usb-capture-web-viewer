@@ -11,3 +11,6 @@ USB_Capture_Snap_Profile/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Local video recordings
+USB_Capture_*.webm
