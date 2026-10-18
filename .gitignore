@@ -1,0 +1,13 @@
+# User/local browser state
+USB_Capture_Snap_Profile/
+*Profile*/
+*.log
+*.tmp
+*.bak
+
+# Development / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
