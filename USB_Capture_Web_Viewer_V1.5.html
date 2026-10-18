@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>USB Capture Snap V1.5</title>
+<style>
+:root{color-scheme:dark;font-family:'Segoe UI','Microsoft YaHei',sans-serif}*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;background:#000;color:#edf2fb;overflow:hidden}#stage{position:fixed;inset:0;background:#000;overflow:hidden}#video{display:block;width:100%;height:100%;object-fit:contain;transform:translate3d(var(--pan-x,0px),var(--pan-y,0px),0) scale(var(--zoom,1));transform-origin:center center;touch-action:none;user-select:none;will-change:transform}#video.cover{object-fit:cover}#video.fill{object-fit:fill} .can-pan #video{cursor:grab}.is-dragging #video{cursor:grabbing}.empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:#aab6c8;pointer-events:none}.empty h1{margin:0 0 10px;color:#fff;font-size:clamp(18px,3vw,26px)}.empty p{margin:5px;font-size:13px}.hidden{display:none!important}.top{position:absolute;z-index:5;top:8px;left:8px;right:8px;display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:9px 10px;border-radius:9px;background:rgba(18,24,34,.96);border:1px solid #3d495a;box-shadow:0 8px 18px #0009}.hide-ui .top{display:none}.brand{font-size:14px;font-weight:750;margin-right:auto;white-space:nowrap}.brand small{color:#a2b7d0;font-weight:normal}.top label{font-size:12px;color:#bdc9db;display:flex;align-items:center;gap:5px;white-space:nowrap}select,button,input{font:inherit}select,button{background:#263348;color:#f0f5fb;border:1px solid #43546b;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:12px}button:hover,select:hover{background:#344965}button.primary{background:#1767c5;border-color:#2477d5}input[type=range]{width:80px;accent-color:#49c4ff;cursor:pointer}.status{position:absolute;z-index:3;bottom:8px;left:8px;pointer-events:none;border-radius:6px;background:rgba(10,17,27,.8);font-size:11px;padding:6px 9px;color:#cad9ec}.hide-ui .status{display:none}.on{color:#62e0ad}.toast{position:absolute;z-index:8;top:58px;left:50%;transform:translateX(-50%);background:#7b2632;color:white;border-radius:8px;padding:9px 14px;font-size:13px;max-width:90%;display:none}.toast.show{display:block}@media(max-width:640px){.top{gap:5px}.brand{width:100%}select,button{padding:6px}.top label{font-size:11px}}
+</style></head>
+<body><div id="stage"><video id="video" autoplay muted playsinline></video><div class="empty" id="empty"><h1>USB Capture Viewer</h1><p>将鼠标移到画面顶部，选择采集设备并启动预览</p><p>放大后左键拖动画面以查看不同区域；滚轮以光标为中心缩放。Win + Z 使用贴靠布局</p></div><div class="toast" id="toast"></div><div class="top" id="top"><div class="brand">◉ USB Capture <small>V1.5 · Pan & Zoom</small></div><label>设备 <select id="devices"><option value="">读取中…</option></select></label><label>分辨率 <select id="resolution"><option value="auto">自动</option><option value="1920x1080">1080P</option><option value="1280x720">720P</option><option value="640x480">480P</option></select></label><label>帧率 <select id="fps"><option value="60">60 FPS</option><option value="30">30 FPS</option><option value="auto">自动</option></select></label><button class="primary" id="start">启动预览</button><button id="stop">停止</button><label>画面 <select id="fit"><option value="contain">完整</option><option value="cover">裁剪铺满</option><option value="fill">拉伸铺满</option></select></label><label>缩放 <input id="zoom" type="range" min="100" max="400" step="1" value="100"><span id="zoomValue">100%</span></label><label>查看 <select id="focus" title="选择需要查看的画面区域"><option value="center">居中</option><option value="tl">左上</option><option value="tr">右上</option><option value="bl">左下</option><option value="br">右下</option><option value="custom">自由移动</option></select></label><button id="center" title="只恢复画面中心位置，保留缩放">居中</button><button id="reset" title="恢复100%缩放及原始显示方式">重置</button><button id="fullscreen">全屏</button></div><div class="status" id="status">未连接 · 鼠标触碰画面顶部打开控制栏</div></div>
+<script>
+'use strict';const $=id=>document.getElementById(id);const video=$('video'),stage=$('stage'),toolbar=$('top');let stream=null,toastTimer=null;let zoom=1,panX=0,panY=0,drag=null;
+function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),5500)}
+function stop(){if(stream){for(const t of stream.getTracks())t.stop();stream=null}video.srcObject=null;drag=null;stage.classList.remove('is-dragging');resetView();$('empty').classList.remove('hidden');$('status').textContent='未连接 · 鼠标触碰画面顶部打开控制栏'}
+async function enumerate(){if(!navigator.mediaDevices?.enumerateDevices){toast('无法读取视频设备。请使用 Chrome，并通过本地文件、localhost 或 HTTPS 打开。');return}try{const chosen=$('devices').value;const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');$('devices').replaceChildren();if(!devices.length){$('devices').add(new Option('无视频设备',''));return}devices.forEach((d,i)=>$('devices').add(new Option(d.label||`视频设备 ${i+1}`,d.deviceId)));if(devices.some(d=>d.deviceId===chosen))$('devices').value=chosen;else{const capture=devices.find(d=>/capture|usb video|hdmi|采集/i.test(d.label));if(capture)$('devices').value=capture.deviceId}}catch(e){toast('读取设备失败：'+e.message)}}
+function info(){if(!stream)return;const t=stream.getVideoTracks()[0],s=t.getSettings();$('status').innerHTML='<span class="on">● LIVE</span> · '+escapeHtml(t.label||'USB Capture')+' · '+(s.width||video.videoWidth)+'×'+(s.height||video.videoHeight)+' · '+(s.frameRate?Math.round(s.frameRate)+' FPS':'FPS 未知')}
+function escapeHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+async function start(){stop();if(!navigator.mediaDevices?.getUserMedia){toast('摄像头 API 不可用，请检查浏览器权限或访问来源。');return}const id=$('devices').value;const res=$('resolution').value;const wh=res==='auto'?null:res.split('x').map(Number);const fps=$('fps').value;const c={audio:false,video:{...(id?{deviceId:{ideal:id}}:{}),...(wh?{width:{ideal:wh[0]},height:{ideal:wh[1]}}:{}),...(fps==='auto'?{}:{frameRate:{ideal:Number(fps)}})}};try{stream=await navigator.mediaDevices.getUserMedia(c);video.srcObject=stream;await video.play();$('empty').classList.add('hidden');applyView();info();stream.getVideoTracks()[0].addEventListener('ended',()=>{stop();toast('视频设备已断开')});await enumerate();hide()}catch(e){stop();toast('启动失败：'+e.message+'；请检查摄像头授权以及是否被其他应用占用。')}}
+function applyFit(){video.classList.remove('cover','fill');const mode=$('fit').value;if(mode==='cover'||mode==='fill')video.classList.add(mode);applyView()}
+function applyZoom(){zoom=Number($('zoom').value)/100;applyView()}
+function viewLimits(){
+  const w=stage.clientWidth,h=stage.clientHeight;
+  if(w<=0||h<=0)return {maxX:0,maxY:0};
+  const ratio=(video.videoWidth>0&&video.videoHeight>0)?video.videoWidth/video.videoHeight:16/9;
+  const fit=$('fit').value;
+  let baseW,baseH;
+  if(fit==='fill'){baseW=w;baseH=h}
+  else if(fit==='cover'){baseW=Math.max(w,h*ratio);baseH=baseW/ratio}
+  else {baseW=Math.min(w,h*ratio);baseH=baseW/ratio}
+  return {maxX:Math.max(0,(baseW*zoom-w)/2),maxY:Math.max(0,(baseH*zoom-h)/2)}
+}
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+function applyView(){
+  const lim=viewLimits();
+  panX=clamp(panX,-lim.maxX,lim.maxX);
+  panY=clamp(panY,-lim.maxY,lim.maxY);
+  video.style.setProperty('--zoom',String(zoom));
+  video.style.setProperty('--pan-x',panX.toFixed(2)+'px');
+  video.style.setProperty('--pan-y',panY.toFixed(2)+'px');
+  $('zoom').value=String(Math.round(zoom*100));
+  $('zoomValue').textContent=Math.round(zoom*100)+'%';
+  stage.classList.toggle('can-pan',Boolean(stream)&&(lim.maxX>.5||lim.maxY>.5))
+}
+function centerView(){panX=0;panY=0;$('focus').value='center';applyView()}
+function resetView(){
+  zoom=1;panX=0;panY=0;
+  $('fit').value='contain';$('focus').value='center';
+  applyFit();applyView()
+}
+function setFocus(){
+  const kind=$('focus').value;
+  if(kind==='custom')return;
+  const lim=viewLimits();
+  panX=(kind==='tl'||kind==='bl')?lim.maxX:(kind==='tr'||kind==='br')?-lim.maxX:0;
+  panY=(kind==='tl'||kind==='tr')?lim.maxY:(kind==='bl'||kind==='br')?-lim.maxY:0;
+  applyView()
+}
+function markCustom(){ $('focus').value='custom' }
+video.addEventListener('pointerdown',e=>{
+  if(e.button!==0||!stream)return;
+  const lim=viewLimits();
+  if(lim.maxX<=.5&&lim.maxY<=.5)return;
+  drag={id:e.pointerId,x:e.clientX,y:e.clientY,panX,panY};
+  video.setPointerCapture(e.pointerId);
+  stage.classList.add('is-dragging');
+  e.preventDefault()
+});
+video.addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.id)return;
+  panX=drag.panX+e.clientX-drag.x;
+  panY=drag.panY+e.clientY-drag.y;
+  markCustom();applyView();
+  e.preventDefault()
+});
+function endDrag(e){
+  if(!drag||(e&&e.pointerId!==drag.id))return;
+  drag=null;stage.classList.remove('is-dragging');
+  if(e&&video.hasPointerCapture(e.pointerId))video.releasePointerCapture(e.pointerId)
+}
+video.addEventListener('pointerup',endDrag);
+video.addEventListener('pointercancel',endDrag);
+video.addEventListener('lostpointercapture',endDrag);
+video.addEventListener('wheel',e=>{
+  if(!stream)return;
+  e.preventDefault();
+  const unit=e.deltaMode===1?0.025:e.deltaMode===2?.5:.0016;
+  const next=clamp(Math.round(zoom*Math.exp(-e.deltaY*unit)*100)/100,1,4);
+  if(next===zoom)return;
+  const rect=stage.getBoundingClientRect();
+  const dx=e.clientX-rect.left-rect.width/2,dy=e.clientY-rect.top-rect.height/2;
+  const factor=next/zoom;
+  panX=dx-(dx-panX)*factor;panY=dy-(dy-panY)*factor;
+  zoom=next;markCustom();applyView()
+},{passive:false});
+const resizeObserver=new ResizeObserver(()=>applyView());
+resizeObserver.observe(stage);
+async function full(){try{if(document.fullscreenElement)await document.exitFullscreen();else await stage.requestFullscreen()}catch(e){toast(e.message)}}
+function show(){stage.classList.remove('hide-ui')}function hide(){if(stream)stage.classList.add('hide-ui')}
+stage.addEventListener('mousemove',e=>{const r=toolbar.getBoundingClientRect();const trigger=e.clientY<=Math.max(22,stage.classList.contains('hide-ui')?34:r.bottom+6);if(trigger)show();else hide()});stage.addEventListener('mouseleave',hide);toolbar.addEventListener('mouseenter',show);toolbar.addEventListener('mouseleave',e=>{if(e.clientY>toolbar.getBoundingClientRect().bottom+4)hide()});
+$('start').onclick=start;$('stop').onclick=stop;$('fit').onchange=()=>{centerView();applyFit()};$('zoom').oninput=applyZoom;$('focus').onchange=setFocus;$('center').onclick=centerView;$('reset').onclick=resetView;$('fullscreen').onclick=full;video.ondblclick=full;document.addEventListener('fullscreenchange',()=>{$('fullscreen').textContent=document.fullscreenElement?'退出全屏':'全屏'});document.addEventListener('keydown',e=>{if(['INPUT','SELECT','BUTTON'].includes(document.activeElement.tagName))return;if(e.key.toLowerCase()==='f')full();const move={ArrowLeft:[-50,0],ArrowRight:[50,0],ArrowUp:[0,-50],ArrowDown:[0,50]}[e.key];if(move&&stream){e.preventDefault();panX+=move[0];panY+=move[1];markCustom();applyView()}});navigator.mediaDevices?.addEventListener('devicechange',enumerate);video.addEventListener('loadedmetadata',()=>{info();applyView()});window.addEventListener('beforeunload',stop);enumerate();
+</script></body></html>
