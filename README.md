@@ -24,6 +24,22 @@
 - **边界限制**：平移量被限制在内容可见的合法范围内，改变窗口尺寸或切换显示模式后自动校正。
 - **视频平移不改变采集参数**：本功能仅控制浏览器的视频显示变换，不调整采集卡的分辨率、帧率或缓存。
 
+## 版本管理
+
+本仓库采用 **main 最新版 + release 分支存档** 的方式：
+
+| 分支 | 内容 | 用途 |
+| --- | --- | --- |
+| `main` | 最新正式版本（目前 V1.5） | 日常下载与后续更新 |
+| `release/v1.4.1` | V1.4.1 历史快照 | 旧版下载和回退 |
+| `release/v1.5.0` | V1.5.0 历史快照 | 对应版本的固定源码 |
+
+- 下载最新版：[main ZIP](https://github.com/AustHuang/usb-capture-web-viewer/archive/refs/heads/main.zip)。
+- 下载 V1.4.1：[V1.4.1 ZIP](https://github.com/AustHuang/usb-capture-web-viewer/archive/refs/heads/release/v1.4.1.zip)。
+- 下载 V1.5.0：[V1.5.0 ZIP](https://github.com/AustHuang/usb-capture-web-viewer/archive/refs/heads/release/v1.5.0.zip)。
+
+**主分支只保留最新版本的可运行文件**；历史版本从 release 分支获取，而不是在根目录同时放多个编号文件。今后新版本应先在功能分支开发和验证，再合并到 main，最后创建该版本的独立快照分支。若后续需要 GitHub Releases 和语义版本标签，可在相同提交上补充不可变 tag。
+
 ## 系统要求
 
 - Windows 11（贴靠布局），Windows 10 可尝试普通窗口方式使用。
@@ -35,7 +51,7 @@
 
 1. 将本仓库文件下载到同一个文件夹，不要单独移动脚本或 HTML。
 2. 接好 HDMI 视频源 → USB 采集卡 → Windows 电脑。
-3. 双击 `Start_Chrome_Snap_V1.5.cmd`。
+3. 双击 `Start_Chrome_Snap.cmd`。
 4. 允许摄像头访问权限，在顶部控制栏选择 USB 采集设备并点击“启动预览”。
 5. 悬停 Windows 最大化按钮，或按 `Win + Z`，使用 Windows 11 的原生贴靠布局。也可以直接拖动窗口边缘更改大小。
 
@@ -43,10 +59,10 @@
 
 ## 参数配置
 
-PowerShell 启动脚本：`Launch_USB_Capture_Snap_V1.5.ps1`。
+PowerShell 启动脚本：`Launch_USB_Capture_Snap.ps1`。
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Launch_USB_Capture_Snap_V1.5.ps1 -Browser Chrome -HeightPercent 34
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Launch_USB_Capture_Snap.ps1 -Browser Chrome -HeightPercent 34
 ```
 
 | 参数 | 默认值 | 用途 |
@@ -72,15 +88,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Launch_USB_Capture_Sna
 ## 文件说明
 
 ```text
-USB_Capture_Web_Viewer_V1.5.html    # 最新版：视频采集、缩放和平移
-USB_Capture_Web_Viewer_V1.4.html    # 历史版 V1.4
-Launch_USB_Capture_Snap_V1.5.ps1   # 最新版窗口启动脚本
-Launch_USB_Capture_Snap_V1.4.ps1   # 历史版启动脚本
-Start_Chrome_Snap_V1.5.cmd         # 最新版双击启动入口
-Start_Chrome_Snap.cmd              # 历史版入口
-README.md                          # 使用说明
-CHANGELOG.md                       # 版本历史
-.gitignore                         # 忽略本地缓存与配置
+USB_Capture_Web_Viewer.html      # 当前版本 HTML，后续保持文件名稳定
+Launch_USB_Capture_Snap.ps1     # 当前版本 Windows 启动与窗口控制
+Start_Chrome_Snap.cmd           # 当前版本双击启动
+README.md                       # 使用说明
+CHANGELOG.md                    # 更新记录
+.gitignore                      # 本地配置排除
 ```
 
 ## 隐私和限制
