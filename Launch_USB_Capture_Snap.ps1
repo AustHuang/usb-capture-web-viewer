@@ -7,7 +7,7 @@ param(
 )
 $ErrorActionPreference='Stop'
 try {
-  $html=Join-Path $PSScriptRoot 'USB_Capture_Web_Viewer_V1.5.html'
+  $html=Join-Path $PSScriptRoot 'USB_Capture_Web_Viewer.html'
   if(!(Test-Path -LiteralPath $html)){throw "HTML file not found: $html"}
   $paths=@()
   if($Browser -ne 'Edge'){
