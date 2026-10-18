@@ -2,7 +2,7 @@
 
 一个用于 Windows 11 的轻量级 HDMI → USB 视频采集卡预览工具。使用 HTML、浏览器摄像头接口与 PowerShell 启动脚本，适合将树莓派等设备的 HDMI 输出显示在 Windows 桌面的一块独立区域中。
 
-> 当前版本：**v1.4.1**（Windows PowerShell 编码兼容性修复版）。目前仅做过静态检查，未在所有 Windows 11 / Chrome 环境下实机验证。
+> 当前版本：**v1.5.0**（画面缩放与拖动优化）。目前仅做过静态检查，未在所有 Windows 11 / Chrome 环境下实机验证。
 
 ## 功能
 
@@ -10,9 +10,19 @@
 - 独立应用窗口：隐藏浏览器标签页和地址栏；**保留 Windows 原生标题栏和可调整窗口边框**，以支持 Win11 贴靠布局（Snap Layouts）。
 - 自动寻找竖屏，首次启动时默认放置在其底部约 **34%** 的工作区域；之后可以使用鼠标或 Win + Z 调整。
 - 请求自动 / 1080P / 720P / 480P，以及 60 / 30 FPS；实际格式以采集卡及浏览器协商结果为准。
-- 画面显示模式：完整显示、裁剪铺满、拉伸铺满；缩放范围 100%–220%。
+- 画面显示模式：完整显示、裁剪铺满、拉伸铺满；缩放范围 100%–400%。
 - 视频控制栏仅在鼠标触及画面顶部时显示，离开后立即隐藏。
 - 视频本地直接预览，不经远程转码或网络中转。
+
+## V1.5 画面平移与缩放
+
+- **拖动查看**：放大后，将鼠标移动到视频区域，按住左键拖动，即可移动画面内容。原来放大后只能查看中心附近的局限已解决。
+- **滚轮缩放**：在视频画面上滚动滚轮，画面围绕鼠标所在位置放大或缩小，方便迅速放大某个终端字符或角落。
+- **四角定位**：顶部控制栏的「查看」下拉菜单可选择左上、右上、左下、右下或居中。选择之后可继续手动微调。
+- **居中按钮**：只归零平移量，不改变缩放倍率；「重置」会恢复 100% 和完整显示。
+- **方向键微调**：非输入控件获得焦点时，方向键每次移动约 50px。
+- **边界限制**：平移量被限制在内容可见的合法范围内，改变窗口尺寸或切换显示模式后自动校正。
+- **视频平移不改变采集参数**：本功能仅控制浏览器的视频显示变换，不调整采集卡的分辨率、帧率或缓存。
 
 ## 系统要求
 
@@ -25,7 +35,7 @@
 
 1. 将本仓库文件下载到同一个文件夹，不要单独移动脚本或 HTML。
 2. 接好 HDMI 视频源 → USB 采集卡 → Windows 电脑。
-3. 双击 `Start_Chrome_Snap.cmd`。
+3. 双击 `Start_Chrome_Snap_V1.5.cmd`。
 4. 允许摄像头访问权限，在顶部控制栏选择 USB 采集设备并点击“启动预览”。
 5. 悬停 Windows 最大化按钮，或按 `Win + Z`，使用 Windows 11 的原生贴靠布局。也可以直接拖动窗口边缘更改大小。
 
@@ -33,10 +43,10 @@
 
 ## 参数配置
 
-PowerShell 启动脚本：`Launch_USB_Capture_Snap_V1.4.ps1`。
+PowerShell 启动脚本：`Launch_USB_Capture_Snap_V1.5.ps1`。
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Launch_USB_Capture_Snap_V1.4.ps1 -Browser Chrome -HeightPercent 34
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Launch_USB_Capture_Snap_V1.5.ps1 -Browser Chrome -HeightPercent 34
 ```
 
 | 参数 | 默认值 | 用途 |
@@ -62,9 +72,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Launch_USB_Capture_Sna
 ## 文件说明
 
 ```text
-USB_Capture_Web_Viewer_V1.4.html    # 视频采集和界面源码
-Launch_USB_Capture_Snap_V1.4.ps1   # Windows 窗口启动与初始定位
-Start_Chrome_Snap.cmd              # 双击启动入口
+USB_Capture_Web_Viewer_V1.5.html    # 最新版：视频采集、缩放和平移
+USB_Capture_Web_Viewer_V1.4.html    # 历史版 V1.4
+Launch_USB_Capture_Snap_V1.5.ps1   # 最新版窗口启动脚本
+Launch_USB_Capture_Snap_V1.4.ps1   # 历史版启动脚本
+Start_Chrome_Snap_V1.5.cmd         # 最新版双击启动入口
+Start_Chrome_Snap.cmd              # 历史版入口
 README.md                          # 使用说明
 CHANGELOG.md                       # 版本历史
 .gitignore                         # 忽略本地缓存与配置
