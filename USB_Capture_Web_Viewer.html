@@ -1,230 +1,418 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>USB Capture Snap V1.6</title>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>USB Capture Snap V1.6.1</title>
 <style>
-:root{color-scheme:dark;font-family:'Segoe UI','Microsoft YaHei',sans-serif}*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;background:#000;color:#edf2fb;overflow:hidden}#stage{position:fixed;inset:0;background:#000;overflow:hidden}#video{display:block;width:100%;height:100%;object-fit:contain;transform:translate3d(var(--pan-x,0px),var(--pan-y,0px),0) scale(var(--zoom,1));transform-origin:center center;touch-action:none;user-select:none;will-change:transform}#video.cover{object-fit:cover}#video.fill{object-fit:fill} .can-pan #video{cursor:grab}.is-dragging #video{cursor:grabbing}.empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:#aab6c8;pointer-events:none}.empty h1{margin:0 0 10px;color:#fff;font-size:clamp(18px,3vw,26px)}.empty p{margin:5px;font-size:13px}.hidden{display:none!important}.top{position:absolute;z-index:5;top:8px;left:8px;right:8px;display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:9px 10px;border-radius:9px;background:rgba(18,24,34,.96);border:1px solid #3d495a;box-shadow:0 8px 18px #0009}.hide-ui .top{display:none}.brand{font-size:14px;font-weight:750;margin-right:auto;white-space:nowrap}.brand small{color:#a2b7d0;font-weight:normal}.top label{font-size:12px;color:#bdc9db;display:flex;align-items:center;gap:5px;white-space:nowrap}select,button,input{font:inherit}select,button{background:#263348;color:#f0f5fb;border:1px solid #43546b;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:12px}button:hover,select:hover{background:#344965}button.primary{background:#1767c5;border-color:#2477d5}input[type=range]{width:80px;accent-color:#49c4ff;cursor:pointer}.status{position:absolute;z-index:3;bottom:8px;left:8px;pointer-events:none;border-radius:6px;background:rgba(10,17,27,.8);font-size:11px;padding:6px 9px;color:#cad9ec}.hide-ui .status{display:none}.on{color:#62e0ad}.toast{position:absolute;z-index:8;top:58px;left:50%;transform:translateX(-50%);background:#7b2632;color:white;border-radius:8px;padding:9px 14px;font-size:13px;max-width:90%;display:none}.toast.show{display:block}@media(max-width:640px){.top{gap:5px}.brand{width:100%}select,button{padding:6px}.top label{font-size:11px}}
-.record-start{border-color:#a84048;color:#ffe8e9}.record-start:not(:disabled):hover{background:#66252f}button:disabled,select:disabled{opacity:.45;cursor:not-allowed}.record-indicator{position:absolute;right:10px;bottom:10px;z-index:4;pointer-events:none;background:rgba(23,20,26,.88);border:1px solid #a6464e;border-radius:7px;padding:7px 11px;color:#fff;font:600 12px 'Segoe UI','Microsoft YaHei',sans-serif;font-variant-numeric:tabular-nums}.record-dot{color:#ff4d63;animation:rec-pulse 1.2s ease-in-out infinite}@keyframes rec-pulse{50%{opacity:.35}}.hide-ui .record-indicator{display:block}
-</style></head>
-<body><div id="stage"><video id="video" autoplay muted playsinline></video><div class="empty" id="empty"><h1>USB Capture Viewer</h1><p>将鼠标移到画面顶部，选择采集设备并启动预览</p><p>放大后左键拖动画面以查看不同区域；滚轮以光标为中心缩放。Win + Z 使用贴靠布局</p></div><div class="toast" id="toast"></div><div class="top" id="top"><div class="brand">◉ USB Capture <small>V1.6 · Recording</small></div><label>设备 <select id="devices"><option value="">读取中…</option></select></label><label>分辨率 <select id="resolution"><option value="auto">自动</option><option value="1920x1080">1080P</option><option value="1280x720">720P</option><option value="640x480">480P</option></select></label><label>帧率 <select id="fps"><option value="60">60 FPS</option><option value="30">30 FPS</option><option value="auto">自动</option></select></label><button class="primary" id="start">启动预览</button><button id="stop">停止预览</button><label>码率 <select id="bitrate" title="录制视频的目标码率；最终码率取决于浏览器编码器"><option value="4000000">4 Mbps</option><option value="8000000" selected>8 Mbps</option><option value="16000000">16 Mbps</option></select></label><button id="record" class="record-start" disabled>● 开始录制</button><button id="recordStop" disabled>■ 停止录制</button><label>画面 <select id="fit"><option value="contain">完整</option><option value="cover">裁剪铺满</option><option value="fill">拉伸铺满</option></select></label><label>缩放 <input id="zoom" type="range" min="100" max="400" step="1" value="100"><span id="zoomValue">100%</span></label><label>查看 <select id="focus" title="选择需要查看的画面区域"><option value="center">居中</option><option value="tl">左上</option><option value="tr">右上</option><option value="bl">左下</option><option value="br">右下</option><option value="custom">自由移动</option></select></label><button id="center" title="只恢复画面中心位置，保留缩放">居中</button><button id="reset" title="恢复100%缩放及原始显示方式">重置</button><button id="fullscreen">全屏</button></div><div class="record-indicator hidden" id="recordIndicator" aria-live="off"><span class="record-dot">●</span> REC <span id="recordTime">00:00:00</span></div><div class="status" id="status">未连接 · 鼠标触碰画面顶部打开控制栏</div></div>
+:root{
+  color-scheme:dark;
+  font-family:Inter,'Segoe UI','Microsoft YaHei',sans-serif;
+  --ui-primary:#1556d5;--ui-primary-strong:#286ce8;
+  --ui-surface:#08090b;--ui-surface-soft:#262a2f;
+  --ui-text:#f0f3f7;--ui-text-secondary:#c6ced9;--ui-border:#48515e;
+  --ui-radius:7px;--ui-control-height:34px;
+}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;background:#050608;color:#f5f7fa;overflow:hidden}
+button,input,select{font:inherit}
+.hidden{display:none!important}
+#stage{position:fixed;inset:0;overflow:hidden;background:#050608}
+#video{display:block;width:100%;height:100%;object-fit:contain;transform:translate3d(var(--pan-x,0px),var(--pan-y,0px),0) scale(var(--zoom,1));transform-origin:center center;touch-action:none;user-select:none;will-change:transform}
+#video.cover{object-fit:cover}#video.fill{object-fit:fill}
+.can-pan #video{cursor:grab}.is-dragging #video{cursor:grabbing}
+.empty{position:absolute;inset:0;pointer-events:none;display:grid;place-content:center;text-align:center;color:#aab6c8;padding:20px}
+.empty h1{font-weight:600;letter-spacing:.01em;font-size:clamp(18px,2.8vw,25px);color:#e9eef7;margin:0 0 10px}
+.empty p{font-size:13px;margin:5px;line-height:1.6}
+/* RC7: full-bleed black header, absolutely NO corner rounding on the outer shell. */
+.top{
+  position:absolute;z-index:5;top:0;left:0;right:0;width:100%;max-width:none;
+  display:grid;grid-template-columns:minmax(180px,auto) minmax(0,1fr);
+  align-items:center;column-gap:18px;
+  padding:8px 13px 8px 18px;
+  border:0;border-bottom:1px solid rgba(255,255,255,.18);border-radius:0!important;
+  background:var(--ui-surface);color:var(--ui-text);
+  box-shadow:0 5px 22px rgba(0,0,0,.35);
+  isolation:isolate;
+}
+/* "36%半透明": 36% transparent black == 64% opacity. Individual controls remain opaque. */
+.toolbar-translucent .top{
+  background:rgba(0,0,0,.64);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+}
+.hide-ui:not(.toolbar-locked) .top{display:none}
+.brand{
+  display:flex;gap:9px;align-items:center;white-space:nowrap;
+  align-self:stretch;min-height:78px;
+  font-size:15px;font-weight:760;letter-spacing:.005em;
+  color:var(--ui-text);padding-right:15px;border-right:1px solid rgba(181,192,209,.25);
+  pointer-events:none;
+}
+.brand-mark{font-size:21px;color:#3d7af8}
+.brand small{font-weight:500;color:#a8b5c9;font-size:12px}
+.toolbar-panels{min-width:0;display:grid;grid-template-rows:34px 34px;row-gap:9px;align-content:center}
+.toolbar-scroll{width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.toolbar-scroll::-webkit-scrollbar{height:0}
+/* Both row captions share one 112px column, regardless of control count. */
+.toolbar-row{
+  display:grid;grid-template-columns:112px minmax(0,1fr);column-gap:11px;
+  width:100%;min-width:max-content;height:34px;align-items:center;white-space:nowrap;
+}
+.row-caption{font-size:14px;font-weight:800;color:#eef2fa;letter-spacing:.01em;white-space:nowrap}
+.row-body{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:max-content;white-space:nowrap}
+.row-record .row-body{justify-content:space-between}
+.row-divider{height:20px;width:1px;background:rgba(190,205,226,.25);margin:0 2px;flex:none}
+.control{display:inline-flex;align-items:center;gap:7px;flex:none;white-space:nowrap;font-size:13px;font-weight:700;color:#e0e5ef}
+.control>span:first-child{flex:none}
+button{
+  height:var(--ui-control-height);min-height:var(--ui-control-height);
+  border:1px solid #515b68;border-radius:6px;
+  color:#e9eff8;background:linear-gradient(180deg,#353a41,#252a31);
+  font-weight:600;font-size:13px;
+  transition:background .12s,border-color .12s;
+  padding:0 10px;cursor:pointer;white-space:nowrap;flex:none
+}
+select.wheel-source{display:none!important}
+button.wheel-choice{
+  max-width:210px;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  padding:0 10px;text-align:center;cursor:ns-resize;white-space:nowrap;
+  font-variant-numeric:tabular-nums;user-select:none;touch-action:pan-x;
+  background:linear-gradient(180deg,#343942,#242931);color:#f1f4f8;font-weight:550;
+}
+button.wheel-choice:hover:not(:disabled),button:hover:not(:disabled){border-color:#819bc4;background:#38485e}
+button.wheel-choice:focus-visible,button:focus-visible{outline:2px solid #4d88ff;outline-offset:1px}
+button:disabled{opacity:.42;cursor:not-allowed}
+button.primary{background:linear-gradient(180deg,#2864e2,#1143bc);border-color:#2559cb;color:white;font-weight:700}
+button.primary:hover:not(:disabled){background:#306bf1}
+button.record-start{background:linear-gradient(180deg,#e9363b,#bb1e23);border-color:#e34043;color:white;font-weight:700}
+button.record-start:hover:not(:disabled){background:#f1464c}
+button.record-stop{background:#6b3038;color:#efcbd0;border-color:#80454d}
+#wheel-devices{width:142px;max-width:min(142px,26vw)}
+#wheel-resolution{width:74px}#wheel-fps{width:78px}#wheel-bitrate{width:100px}
+#wheel-fit{width:68px}#wheel-focus{width:69px}
+#wheel-zoom{width:89px;color:#f2f7ff;font-weight:730}
+button.toolbar-toggle{min-width:68px;background:linear-gradient(180deg,#313941,#252a31);color:#dce6f7;font-weight:680}
+button.toolbar-toggle[aria-pressed="true"]{background:linear-gradient(180deg,#3572e0,#2054bd);border-color:#4180ec;color:white;font-weight:750}
+button.transparency-control{
+  min-width:139px;display:inline-flex;justify-content:center;align-items:center;gap:9px;
+  background:linear-gradient(180deg,#24282f,#191d22);color:#dce3ec;
+  border-color:rgba(255,255,255,.14);padding:0 9px;
+}
+button.transparency-control[aria-pressed="true"]{background:linear-gradient(180deg,#282f39,#1c222c);border-color:rgba(255,255,255,.20);color:#eef2f7}
+.switch-track{position:relative;width:30px;height:17px;display:inline-block;background:#626e7e;border-radius:12px;flex:none;transition:background .15s}
+.switch-thumb{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:transform .15s}
+.transparency-control[aria-pressed="true"] .switch-track{background:#135cfa}
+.transparency-control[aria-pressed="true"] .switch-thumb{transform:translateX(13px)}
+.switch-label{white-space:nowrap;font-size:12px;font-weight:650}
+@media(max-width:1300px){
+ .top{grid-template-columns:minmax(185px,200px) minmax(0,1fr);column-gap:12px;padding-inline:12px}
+ .brand{font-size:13px;gap:5px;padding-right:9px}
+ .brand small{font-size:10.5px}
+ .toolbar-row{grid-template-columns:95px minmax(0,1fr);column-gap:8px}
+ .row-caption{font-size:13px}
+ .row-body{gap:6px}
+ .control{font-size:12px;gap:5px}
+ button{font-size:12px;padding-inline:8px}
+ #wheel-devices{width:125px}
+ #wheel-bitrate{width:80px}
+ #wheel-zoom{width:72px}
+}
+@media(max-width:690px){
+ .top{grid-template-columns:138px minmax(0,1fr);column-gap:8px;padding:7px 8px}
+ .brand{min-height:76px;font-size:11px;gap:3px;flex-wrap:wrap;align-content:center}
+ .brand small{width:100%;padding-left:17px;font-size:10px}
+ .brand-mark{font-size:15px}
+ .toolbar-row{grid-template-columns:85px minmax(0,1fr);column-gap:7px}
+ .row-caption{font-size:12px}
+ .control{font-size:12px}
+ .toolbar-scroll{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
+ .toolbar-scroll::-webkit-scrollbar{height:3px}
+}
+.status{position:absolute;z-index:3;left:8px;bottom:8px;max-width:calc(100% - 18px);pointer-events:none;border-radius:7px;background:rgba(12,20,31,.82);font-size:11px;padding:6px 9px;color:#d3deed;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+.hide-ui .status{display:none}
+.on{color:#54dbac}
+.record-indicator{position:absolute;z-index:4;right:9px;bottom:9px;pointer-events:none;background:rgba(26,22,29,.91);border:1px solid #b44b57;border-radius:7px;padding:7px 11px;color:white;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.record-dot{color:#ff5266;animation:pulse 1.2s ease-in-out infinite}@keyframes pulse{50%{opacity:.3}}
+.toast{position:absolute;z-index:8;left:50%;top:60px;transform:translateX(-50%);color:#fff;background:rgba(119,32,48,.95);border-radius:8px;padding:9px 14px;max-width:92%;font-size:12px;display:none;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.toast.show{display:block}.toast.success{background:rgba(16,100,77,.96)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="video" autoplay muted playsinline title="双击右键或 Ctrl+C：复制当前视频帧（PNG）；Shift+右键查看原生菜单"></video>
+  <div class="empty" id="empty"><h1>USB Capture Viewer</h1><p>鼠标移到顶部，在参数数值上滚动滚轮即可切换；启动预览后调整分辨率、帧率会自动生效。</p><p>视频区域滚轮缩放、左键拖动；双击右键或 Ctrl+C 一键复制当前帧为 PNG。Win + Z 使用贴靠布局。</p></div>
+  <div class="toast" id="toast" role="status"></div>
+  <nav class="top" id="top" aria-label="USB 采集工具栏，两行；鼠标滚轮调整数值">
+    <div class="brand" aria-hidden="true"><span class="brand-mark">◉</span><span>USB Capture</span><small>V1.6.1</small></div>
+    <div class="toolbar-panels">
+    <div class="toolbar-scroll" title="窄窗口可左右滚动查看第一行选项">
+      <div class="toolbar-row row-picture" aria-label="第一行：采集及画面设置">
+        <span class="row-caption">画面设置</span>
+        <div class="row-body">
+        <div class="control"><span>设备</span><select class="wheel-source" id="devices" tabindex="-1" aria-hidden="true"><option value="">读取中…</option></select><button type="button" class="wheel-choice" id="wheel-devices" data-source="devices" title="滚轮或单击切换设备" aria-label="设备，滚轮调整">读取中…</button></div>
+        <div class="control"><span>分辨率</span><select class="wheel-source" id="resolution" tabindex="-1" aria-hidden="true"><option value="auto">自动</option><option value="1920x1080">1080P</option><option value="1280x720">720P</option><option value="640x480">480P</option></select><button type="button" class="wheel-choice" id="wheel-resolution" data-source="resolution" title="滚轮切换分辨率" aria-label="分辨率，滚轮调整">读取中…</button></div>
+        <div class="control"><span>帧率</span><select class="wheel-source" id="fps" tabindex="-1" aria-hidden="true"><option value="60">60 FPS</option><option value="30">30 FPS</option><option value="auto">自动</option></select><button type="button" class="wheel-choice" id="wheel-fps" data-source="fps" title="滚轮切换帧率" aria-label="帧率，滚轮调整">读取中…</button></div>
+        <button id="start" class="primary">启动预览</button><button id="stop">停止</button>
+        <span class="row-divider" aria-hidden="true"></span>
+        <div class="control"><span>模式</span><select class="wheel-source" id="fit" tabindex="-1" aria-hidden="true"><option value="contain">完整</option><option value="cover">裁剪</option><option value="fill">拉伸</option></select><button type="button" class="wheel-choice" id="wheel-fit" data-source="fit" title="滚轮切换画面模式" aria-label="画面模式，滚轮调整">读取中…</button></div>
+        <button id="center" title="只恢复画面中心">居中</button><button id="reset" title="缩放还原至 100%，完整显示">重置</button><button id="fullscreen">全屏</button>
+        </div>
+      </div>
+    </div>
+    <div class="toolbar-scroll" title="第二行：定位、录制、缩放和工具栏显示">
+      <div class="toolbar-row row-record" aria-label="第二行：录制、定位、缩放和工具栏显示">
+        <span class="row-caption">录制 · 缩放</span>
+        <div class="row-body">
+        <div class="control"><span>码率</span><select class="wheel-source" id="bitrate" tabindex="-1" aria-hidden="true"><option value="4000000">4 Mbps</option><option value="8000000" selected>8 Mbps</option><option value="16000000">16 Mbps</option></select><button type="button" class="wheel-choice" id="wheel-bitrate" data-source="bitrate" title="滚轮切换下次录制码率" aria-label="码率，滚轮调整">读取中…</button></div>
+        <button id="record" class="record-start" disabled>● 录制</button><button id="recordStop" class="record-stop" disabled>■ 结束</button>
+        <span class="row-divider" aria-hidden="true"></span>
+        <div class="control"><span>定位</span><select class="wheel-source" id="focus" tabindex="-1" aria-hidden="true"><option value="center">居中</option><option value="tl">左上</option><option value="tr">右上</option><option value="bl">左下</option><option value="br">右下</option><option value="custom">自由</option></select><button type="button" class="wheel-choice" id="wheel-focus" data-source="focus" title="滚轮切换画面位置" aria-label="画面定位，滚轮调整">读取中…</button></div>
+        <div class="control"><span>缩放</span><button type="button" id="wheel-zoom" class="wheel-choice" title="滚轮 ±10%；单击增加10%；视频区域滚轮仍以光标为中心缩放" aria-label="缩放比例，滚轮调整">100%</button></div>
+        <span class="row-divider" aria-hidden="true"></span>
+        <button type="button" class="toolbar-toggle" id="toolbarLock" aria-pressed="false" title="锁定后工具栏常驻；解锁后恢复鼠标触顶显示">锁定栏</button>
+        <button type="button" class="toolbar-toggle transparency-control" id="toolbarOpacity" aria-pressed="false" title="切换背景 36% 透明度：黑色底 64% 不透明；不影响控件文字" aria-label="切换 36% 半透明背景"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span class="switch-label">36%半透明</span></button>
+        </div>
+      </div>
+    </div>
+    </div>
+  </nav>
+  <div class="record-indicator hidden" id="recordIndicator"><span class="record-dot">●</span> REC <span id="recordTime">00:00:00</span></div>
+  <div class="status" id="status">未连接 · 鼠标触碰画面顶部打开控制栏</div>
+</div>
 <script>
-'use strict';const $=id=>document.getElementById(id);const video=$('video'),stage=$('stage'),toolbar=$('top');let stream=null,toastTimer=null;let zoom=1,panX=0,panY=0,drag=null;let recorder=null,recSession=null,recPreparing=false,recClock=null;
-function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),5500)}
-function stopPreviewOnly(){if(stream){for(const t of stream.getTracks())t.stop();stream=null}video.srcObject=null;drag=null;stage.classList.remove('is-dragging');resetView();$('empty').classList.remove('hidden');$('status').textContent='未连接 · 鼠标触碰画面顶部打开控制栏';updateRecordButtons()}
-async function stop(){if(recSession)await stopRecording();stopPreviewOnly()}
-async function enumerate(){if(!navigator.mediaDevices?.enumerateDevices){toast('无法读取视频设备。请使用 Chrome，并通过本地文件、localhost 或 HTTPS 打开。');return}try{const chosen=$('devices').value;const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');$('devices').replaceChildren();if(!devices.length){$('devices').add(new Option('无视频设备',''));return}devices.forEach((d,i)=>$('devices').add(new Option(d.label||`视频设备 ${i+1}`,d.deviceId)));if(devices.some(d=>d.deviceId===chosen))$('devices').value=chosen;else{const capture=devices.find(d=>/capture|usb video|hdmi|采集/i.test(d.label));if(capture)$('devices').value=capture.deviceId}}catch(e){toast('读取设备失败：'+e.message)}}
-function info(){if(!stream)return;const t=stream.getVideoTracks()[0],s=t.getSettings();$('status').innerHTML='<span class="on">● LIVE</span> · '+escapeHtml(t.label||'USB Capture')+' · '+(s.width||video.videoWidth)+'×'+(s.height||video.videoHeight)+' · '+(s.frameRate?Math.round(s.frameRate)+' FPS':'FPS 未知')}
+'use strict';
+const $=id=>document.getElementById(id);
+const video=$('video'),stage=$('stage'),toolbar=$('top');
+let stream=null,toastTimer=null,zoom=1,panX=0,panY=0,drag=null;
+let recorder=null,recSession=null,recPreparing=false,recClock=null;
+let captureEpoch=0,reconfigureTimer=null,liveRequested=false,pointerAtTop=false;let constraintsEpoch=0;
+const TOOLBAR_PREF_KEY='usb-capture-toolbar-v161';
+let toolbarLocked=false,toolbarTranslucent=false;
+try{const pref=JSON.parse(localStorage.getItem(TOOLBAR_PREF_KEY)||'{}');toolbarLocked=pref.locked===true;toolbarTranslucent=pref.translucent===true}catch(_){}
+function saveToolbarPreferences(){try{localStorage.setItem(TOOLBAR_PREF_KEY,JSON.stringify({locked:toolbarLocked,translucent:toolbarTranslucent}))}catch(_){}}
+function applyToolbarPreferences(){
+ stage.classList.toggle('toolbar-locked',toolbarLocked);
+ stage.classList.toggle('toolbar-translucent',toolbarTranslucent);
+ $('toolbarLock').setAttribute('aria-pressed',String(toolbarLocked));
+ $('toolbarLock').textContent=toolbarLocked?'已锁定':'锁定栏';
+ $('toolbarOpacity').setAttribute('aria-pressed',String(toolbarTranslucent));
+ $('toolbarOpacity').setAttribute('title',toolbarTranslucent?'背景已使用 36% 透明度，点击恢复黑色实底':'点击启用 36% 透明度的黑色背景');
+ if(toolbarLocked)show();
+ else if(stream&&!pointerAtTop)hide();
+ saveToolbarPreferences();
+}
+$('toolbarLock').addEventListener('click',()=>{toolbarLocked=!toolbarLocked;applyToolbarPreferences()});
+$('toolbarOpacity').addEventListener('click',()=>{toolbarTranslucent=!toolbarTranslucent;applyToolbarPreferences()});
+applyToolbarPreferences();
+function toast(msg,success=false){$('toast').textContent=msg;$('toast').classList.toggle('success',success);$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),success?2100:5300)}
 function escapeHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
-async function start(){if(recSession||recPreparing)return;await stop();if(!navigator.mediaDevices?.getUserMedia){toast('摄像头 API 不可用，请检查浏览器权限或访问来源。');return}const id=$('devices').value;const res=$('resolution').value;const wh=res==='auto'?null:res.split('x').map(Number);const fps=$('fps').value;const c={audio:false,video:{...(id?{deviceId:{ideal:id}}:{}),...(wh?{width:{ideal:wh[0]},height:{ideal:wh[1]}}:{}),...(fps==='auto'?{}:{frameRate:{ideal:Number(fps)}})}};try{stream=await navigator.mediaDevices.getUserMedia(c);video.srcObject=stream;await video.play();$('empty').classList.add('hidden');applyView();info();stream.getVideoTracks()[0].addEventListener('ended',()=>{stop();toast('视频设备已断开')});await enumerate();updateRecordButtons();hide()}catch(e){await stop();toast('启动失败：'+e.message+'；请检查摄像头授权以及是否被其他应用占用。')}}
+// Copy the original, unscaled UVC frame (no toolbar/REC overlay) at trigger time.
+// Important: call clipboard.write during the input gesture. Supply a Promise<Blob>
+// so PNG encoding happens asynchronously without missing browser user activation.
+function copyCurrentFrame(){
+ if(!stream||video.readyState<2||!video.videoWidth||!video.videoHeight){
+  toast('视频未就绪，请先启动预览。');return;
+ }
+ if(!navigator.clipboard?.write||typeof ClipboardItem==='undefined'){
+  toast('浏览器不支持复制图片，请用 Chrome / Edge 并通过 localhost 打开。');return;
+ }
+ try{
+  const canvas=document.createElement('canvas');
+  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+  const ctx=canvas.getContext('2d',{alpha:false});
+  if(!ctx)throw new Error('无法创建截图画布');
+  // Freeze this exact frame synchronously; no awaited operation before drawImage.
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  const png=new Promise((resolve,reject)=>{
+   canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('PNG 编码失败')),'image/png');
+  });
+  void navigator.clipboard.write([new ClipboardItem({'image/png':png})])
+   .then(()=>toast('当前帧已复制，可直接 Ctrl+V 粘贴 · '+canvas.width+'×'+canvas.height,true))
+   .catch(e=>toast('复制失败：'+e.message+'；请检查浏览器剪贴板权限。'));
+ }catch(e){toast('无法复制当前帧：'+e.message)}
+}
+// Chromium opens a context menu on the FIRST right click, so right-double-click
+// requires suppressing the native menu on video. Shift+right click restores it.
+// Do not rely on dblclick: browsers usually only fire dblclick for the primary button.
+let pendingRightClick=null;
+const RIGHT_DOUBLE_MS=360,RIGHT_DOUBLE_PX=22;
+video.addEventListener('mousedown',e=>{
+ if(e.button!==2||e.shiftKey||!stream)return;
+ e.preventDefault();
+ const now=performance.now();
+ if(pendingRightClick&&now-pendingRightClick.time<=RIGHT_DOUBLE_MS&&
+    Math.hypot(e.clientX-pendingRightClick.x,e.clientY-pendingRightClick.y)<=RIGHT_DOUBLE_PX){
+  pendingRightClick=null;
+  copyCurrentFrame(); // immediate video frame freeze, on the second press
+ }else pendingRightClick={time:now,x:e.clientX,y:e.clientY};
+});
+video.addEventListener('contextmenu',e=>{
+ if(stream&&e.button===2&&!e.shiftKey)e.preventDefault();
+});
+document.addEventListener('keydown',e=>{
+ if(e.repeat||e.altKey||e.shiftKey||!(e.ctrlKey||e.metaKey)||e.key.toLowerCase()!=='c')return;
+ if(!stream||video.readyState<2)return;
+ const target=e.target;
+ if(target?.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(target?.tagName))return;
+ if(String(window.getSelection?.()||'').trim())return;
+ e.preventDefault();copyCurrentFrame();
+});
 
-/* Record the unmodified capture MediaStream, not CSS zoom/pan, browser controls or window chrome. */
-function updateRecordButtons(){
-  const saving=Boolean(recSession&&recSession.saving);
-  $('record').disabled=!stream||Boolean(recSession)||recPreparing;
-  $('recordStop').disabled=!recSession||saving||!recorder||recorder.state==='inactive';
-  $('start').disabled=Boolean(recSession)||recPreparing;
-  $('stop').disabled=recPreparing||saving;
-  $('bitrate').disabled=Boolean(recSession)||recPreparing;
+function info(){if(!stream)return;const track=stream.getVideoTracks()[0];if(!track)return;const s=track.getSettings();$('status').innerHTML='<span class="on">● LIVE</span> · '+escapeHtml(track.label||'USB Capture')+' · '+(s.width||video.videoWidth)+'×'+(s.height||video.videoHeight)+' · '+(s.frameRate?Math.round(s.frameRate)+' FPS':'FPS 未知')}
+function updateRecordButtons(){const saving=Boolean(recSession&&recSession.saving);$('record').disabled=!stream||Boolean(recSession)||recPreparing;$('recordStop').disabled=!recSession||saving||!recorder||recorder.state==='inactive';$('start').disabled=Boolean(recSession)||recPreparing;$('stop').disabled=recPreparing||saving;$('bitrate').disabled=Boolean(recSession)||recPreparing;for(const id of ['devices','resolution','fps','bitrate']){$(id).disabled=Boolean(recSession)||recPreparing;syncWheelChoice(id)}}
+function stopPreviewOnly(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null;drag=null;stage.classList.remove('is-dragging');resetView();$('empty').classList.remove('hidden');$('status').textContent='未连接 · 鼠标触碰画面顶部打开控制栏';updateRecordButtons()}
+async function stop(){liveRequested=false;captureEpoch++;constraintsEpoch++;clearTimeout(reconfigureTimer);reconfigureTimer=null;if(recSession)await stopRecording();stopPreviewOnly()}
+async function enumerate(){if(!navigator.mediaDevices?.enumerateDevices){toast('无法读取视频设备。请通过本地文件、localhost 或 HTTPS 使用 Chrome / Edge。');return}try{const chosen=$('devices').value;const d=(await navigator.mediaDevices.enumerateDevices()).filter(x=>x.kind==='videoinput');$('devices').replaceChildren();if(!d.length){$('devices').add(new Option('无视频设备',''));return}d.forEach((x,i)=>$('devices').add(new Option(x.label||'视频设备 '+(i+1),x.deviceId)));if(d.some(x=>x.deviceId===chosen))$('devices').value=chosen;else{const preferred=d.find(x=>/capture|usb video|hdmi|采集/i.test(x.label));if(preferred)$('devices').value=preferred.deviceId}syncWheelChoice('devices')}catch(e){toast('读取设备失败：'+e.message)}}
+async function start({keepView=false}={}){
+ if(recSession||recPreparing)return;
+ liveRequested=true;clearTimeout(reconfigureTimer);reconfigureTimer=null;constraintsEpoch++;
+ const token=++captureEpoch;
+ const prior=keepView?{zoom,panX,panY,fit:$('fit').value,focus:$('focus').value}:null;
+ stopPreviewOnly();
+ if(!navigator.mediaDevices?.getUserMedia){liveRequested=false;toast('摄像头 API 不可用，请检查访问来源及浏览器权限。');return}
+ const id=$('devices').value,r=$('resolution').value,wh=r==='auto'?null:r.split('x').map(Number),f=$('fps').value;
+ const constraints={audio:false,video:{...(id?{deviceId:{ideal:id}}:{}),...(wh?{width:{ideal:wh[0]},height:{ideal:wh[1]}}:{}),...(f==='auto'?{}:{frameRate:{ideal:Number(f)}})}};
+ try{
+  const got=await navigator.mediaDevices.getUserMedia(constraints);
+  if(token!==captureEpoch){got.getTracks().forEach(t=>t.stop());return}
+  stream=got;video.srcObject=got;
+  await video.play();if(token!==captureEpoch)return;
+  $('empty').classList.add('hidden');
+  if(prior){zoom=prior.zoom;panX=prior.panX;panY=prior.panY;$('fit').value=prior.fit;$('focus').value=prior.focus;applyFit();syncWheelChoice('fit');syncWheelChoice('focus')}
+  applyView();info();
+  got.getVideoTracks()[0]?.addEventListener('ended',()=>{if(stream===got){void stop();toast('视频采集设备已断开')}});
+  await enumerate();updateRecordButtons();if(pointerAtTop)show();else hide();
+ }catch(e){if(token!==captureEpoch)return;liveRequested=false;stopPreviewOnly();toast('启动失败：'+e.message+'；请检查采集卡和摄像头授权。')}
 }
-function recordFilename(){
-  const d=new Date(),p=n=>String(n).padStart(2,'0');
-  return 'USB_Capture_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+'.webm';
-}
-function recordElapsed(ms){
-  const n=Math.floor(ms/1000),p=v=>String(v).padStart(2,'0');
-  return p(Math.floor(n/3600))+':'+p(Math.floor(n/60)%60)+':'+p(n%60);
-}
-function updateRecordClock(){
-  if(recSession)$('recordTime').textContent=recordElapsed(performance.now()-recSession.startAt);
-}
-function recorderMime(){
-  for(const type of ['video/webm;codecs=vp8','video/webm']){
-    if(MediaRecorder.isTypeSupported(type))return type;
-  }
-  return '';
-}
-async function startRecording(){
-  if(!stream||recSession||recPreparing)return;
-  if(typeof MediaRecorder==='undefined'){toast('当前浏览器不支持 MediaRecorder；请使用最新版 Chrome 或 Edge。');return}
-  const mime=recorderMime();
-  if(!mime){toast('当前浏览器不支持 WebM 视频录制。');return}
-  const source=stream;
-  const filename=recordFilename();
-  let writer=null;
-  recPreparing=true;updateRecordButtons();
-  try{
-    if(typeof window.showSaveFilePicker==='function'){
-      const fileHandle=await window.showSaveFilePicker({
-        suggestedName:filename,
-        types:[{description:'WebM 视频',accept:{'video/webm':['.webm']}}],
-        excludeAcceptAllOption:true
-      });
-      writer=await fileHandle.createWritable();
-    }else{
-      toast('浏览器不支持直接写入文件：结束录制后会下载 WebM。长时间录制可能占用较多内存。');
-    }
-    if(stream!==source||!source.active){
-      if(writer)await writer.abort();
-      toast('采集视频已断开，请重新启动预览。');
-      return;
-    }
-    const options={mimeType:mime,videoBitsPerSecond:Number($('bitrate').value)};
-    const nextRecorder=new MediaRecorder(source,options);
-    let resolveDone;
-    const done=new Promise(resolve=>{resolveDone=resolve});
-    const session={
-      writer,filename,mime,chunks:[],bytes:0,startAt:performance.now(),
-      queue:Promise.resolve(),writeError:null,recordError:null,saving:false,done,resolveDone
-    };
-    nextRecorder.ondataavailable=e=>{
-      if(!e.data||!e.data.size)return;
-      session.bytes+=e.data.size;
-      if(session.writer){
-        session.queue=session.queue.then(()=>session.writer.write(e.data)).catch(error=>{
-          session.writeError=error;
-          if(nextRecorder.state==='recording')stopRecording();
-        });
-      }else session.chunks.push(e.data);
-    };
-    nextRecorder.onerror=e=>{
-      session.recordError=e.error||new Error('录制编码失败');
-      if(nextRecorder.state==='recording')stopRecording();
-    };
-    nextRecorder.onstop=()=>{void finishRecording(session)};
-    recorder=nextRecorder;recSession=session;
-    nextRecorder.start(1000);
-    $('recordIndicator').classList.remove('hidden');
-    updateRecordClock();
-    recClock=setInterval(updateRecordClock,250);
-    toast('已开始录制原始 HDMI 视频，不包含缩放和工具栏。');
-  }catch(e){
-    if(writer)try{await writer.abort()}catch(_){}
-    if(recSession&&recorder?.state==='inactive'){recSession.resolveDone();recSession=null;recorder=null}
-    if(e.name!=='AbortError')toast('开始录制失败：'+e.message);
-  }finally{recPreparing=false;updateRecordButtons()}
-}
-function stopRecording(){
-  if(!recSession)return Promise.resolve();
-  const session=recSession;
-  if(recorder&&recorder.state!=='inactive'){
-    try{recorder.stop()}catch(e){
-      session.recordError=e;
-      void finishRecording(session);
-    }
-  }
-  updateRecordButtons();
-  return session.done;
-}
-async function finishRecording(session){
-  if(session.saving)return;
-  session.saving=true;
-  clearInterval(recClock);recClock=null;
-  updateRecordClock();updateRecordButtons();
-  try{
-    await session.queue;
-    if(session.writeError)throw session.writeError;
-    if(!session.bytes)throw new Error('没有收到有效的视频数据');
-    if(session.writer)await session.writer.close();
-    else{
-      const blob=new Blob(session.chunks,{type:session.mime});
-      if(!blob.size)throw new Error('生成的视频文件为空');
-      const url=URL.createObjectURL(blob);
-      const link=document.createElement('a');
-      link.href=url;link.download=session.filename;link.style.display='none';
-      document.body.appendChild(link);link.click();link.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),60000);
-    }
-    toast((session.recordError?'录制意外中断，已尝试保存：':'录制完成：')+session.filename);
-  }catch(e){
-    if(session.writer)try{await session.writer.abort()}catch(_){}
-    toast('录制保存失败：'+e.message);
-  }finally{
-    $('recordIndicator').classList.add('hidden');
-    if(recSession===session){recSession=null;recorder=null}
-    session.chunks=[];
-    updateRecordButtons();
-    session.resolveDone();
-  }
-}
-
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v))}
+function viewLimits(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return{maxX:0,maxY:0};const ratio=video.videoWidth>0&&video.videoHeight>0?video.videoWidth/video.videoHeight:16/9;let baseW,baseH;const fit=$('fit').value;if(fit==='fill'){baseW=w;baseH=h}else if(fit==='cover'){baseW=Math.max(w,h*ratio);baseH=baseW/ratio}else{baseW=Math.min(w,h*ratio);baseH=baseW/ratio}return{maxX:Math.max(0,(baseW*zoom-w)/2),maxY:Math.max(0,(baseH*zoom-h)/2)}}
+function applyView(){const lim=viewLimits();panX=clamp(panX,-lim.maxX,lim.maxX);panY=clamp(panY,-lim.maxY,lim.maxY);video.style.setProperty('--zoom',String(zoom));video.style.setProperty('--pan-x',panX.toFixed(2)+'px');video.style.setProperty('--pan-y',panY.toFixed(2)+'px');$('wheel-zoom').textContent=Math.round(zoom*100)+'%';$('wheel-zoom').setAttribute('aria-label','缩放 '+Math.round(zoom*100)+'%，滚轮调整');stage.classList.toggle('can-pan',Boolean(stream)&&(lim.maxX>.5||lim.maxY>.5))}
 function applyFit(){video.classList.remove('cover','fill');const mode=$('fit').value;if(mode==='cover'||mode==='fill')video.classList.add(mode);applyView()}
-function applyZoom(){zoom=Number($('zoom').value)/100;applyView()}
-function viewLimits(){
-  const w=stage.clientWidth,h=stage.clientHeight;
-  if(w<=0||h<=0)return {maxX:0,maxY:0};
-  const ratio=(video.videoWidth>0&&video.videoHeight>0)?video.videoWidth/video.videoHeight:16/9;
-  const fit=$('fit').value;
-  let baseW,baseH;
-  if(fit==='fill'){baseW=w;baseH=h}
-  else if(fit==='cover'){baseW=Math.max(w,h*ratio);baseH=baseW/ratio}
-  else {baseW=Math.min(w,h*ratio);baseH=baseW/ratio}
-  return {maxX:Math.max(0,(baseW*zoom-w)/2),maxY:Math.max(0,(baseH*zoom-h)/2)}
-}
-function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
-function applyView(){
-  const lim=viewLimits();
-  panX=clamp(panX,-lim.maxX,lim.maxX);
-  panY=clamp(panY,-lim.maxY,lim.maxY);
-  video.style.setProperty('--zoom',String(zoom));
-  video.style.setProperty('--pan-x',panX.toFixed(2)+'px');
-  video.style.setProperty('--pan-y',panY.toFixed(2)+'px');
-  $('zoom').value=String(Math.round(zoom*100));
-  $('zoomValue').textContent=Math.round(zoom*100)+'%';
-  stage.classList.toggle('can-pan',Boolean(stream)&&(lim.maxX>.5||lim.maxY>.5))
-}
-function centerView(){panX=0;panY=0;$('focus').value='center';applyView()}
-function resetView(){
-  zoom=1;panX=0;panY=0;
-  $('fit').value='contain';$('focus').value='center';
-  applyFit();applyView()
-}
-function setFocus(){
-  const kind=$('focus').value;
-  if(kind==='custom')return;
-  const lim=viewLimits();
-  panX=(kind==='tl'||kind==='bl')?lim.maxX:(kind==='tr'||kind==='br')?-lim.maxX:0;
-  panY=(kind==='tl'||kind==='tr')?lim.maxY:(kind==='bl'||kind==='br')?-lim.maxY:0;
-  applyView()
-}
-function markCustom(){ $('focus').value='custom' }
-video.addEventListener('pointerdown',e=>{
-  if(e.button!==0||!stream)return;
-  const lim=viewLimits();
-  if(lim.maxX<=.5&&lim.maxY<=.5)return;
-  drag={id:e.pointerId,x:e.clientX,y:e.clientY,panX,panY};
-  video.setPointerCapture(e.pointerId);
-  stage.classList.add('is-dragging');
-  e.preventDefault()
-});
-video.addEventListener('pointermove',e=>{
-  if(!drag||e.pointerId!==drag.id)return;
-  panX=drag.panX+e.clientX-drag.x;
-  panY=drag.panY+e.clientY-drag.y;
-  markCustom();applyView();
-  e.preventDefault()
-});
-function endDrag(e){
-  if(!drag||(e&&e.pointerId!==drag.id))return;
-  drag=null;stage.classList.remove('is-dragging');
-  if(e&&video.hasPointerCapture(e.pointerId))video.releasePointerCapture(e.pointerId)
-}
-video.addEventListener('pointerup',endDrag);
-video.addEventListener('pointercancel',endDrag);
-video.addEventListener('lostpointercapture',endDrag);
-video.addEventListener('wheel',e=>{
-  if(!stream)return;
-  e.preventDefault();
-  const unit=e.deltaMode===1?0.025:e.deltaMode===2?.5:.0016;
-  const next=clamp(Math.round(zoom*Math.exp(-e.deltaY*unit)*100)/100,1,4);
-  if(next===zoom)return;
-  const rect=stage.getBoundingClientRect();
-  const dx=e.clientX-rect.left-rect.width/2,dy=e.clientY-rect.top-rect.height/2;
-  const factor=next/zoom;
-  panX=dx-(dx-panX)*factor;panY=dy-(dy-panY)*factor;
-  zoom=next;markCustom();applyView()
-},{passive:false});
-const resizeObserver=new ResizeObserver(()=>applyView());
-resizeObserver.observe(stage);
+function stepZoom(direction){zoom=clamp(Math.round(zoom*100)+direction*10,100,400)/100;applyView()}
+function centerView(){panX=0;panY=0;$('focus').value='center';applyView();syncWheelChoice('focus')}
+function resetView(){zoom=1;panX=0;panY=0;$('fit').value='contain';$('focus').value='center';applyFit();syncWheelChoice('fit');syncWheelChoice('focus')}
+function setFocus(){const kind=$('focus').value;if(kind==='custom')return;const lim=viewLimits();panX=kind==='tl'||kind==='bl'?lim.maxX:kind==='tr'||kind==='br'?-lim.maxX:0;panY=kind==='tl'||kind==='tr'?lim.maxY:kind==='bl'||kind==='br'?-lim.maxY:0;applyView()}
+function markCustom(){$('focus').value='custom';syncWheelChoice('focus')}
+video.addEventListener('pointerdown',e=>{if(e.button!==0||!stream)return;const lim=viewLimits();if(lim.maxX<=.5&&lim.maxY<=.5)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,panX,panY};video.setPointerCapture(e.pointerId);stage.classList.add('is-dragging');e.preventDefault()});
+video.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;panX=drag.panX+e.clientX-drag.x;panY=drag.panY+e.clientY-drag.y;markCustom();applyView();e.preventDefault()});
+function endDrag(e){if(!drag||(e&&e.pointerId!==drag.id))return;drag=null;stage.classList.remove('is-dragging');if(e&&video.hasPointerCapture(e.pointerId))video.releasePointerCapture(e.pointerId)}
+video.addEventListener('pointerup',endDrag);video.addEventListener('pointercancel',endDrag);video.addEventListener('lostpointercapture',endDrag);
+video.addEventListener('wheel',e=>{if(!stream)return;e.preventDefault();const unit=e.deltaMode===1?.025:e.deltaMode===2?.5:.0016,next=clamp(Math.round(zoom*Math.exp(-e.deltaY*unit)*100)/100,1,4);if(next===zoom)return;const rect=stage.getBoundingClientRect(),dx=e.clientX-rect.left-rect.width/2,dy=e.clientY-rect.top-rect.height/2,factor=next/zoom;panX=dx-(dx-panX)*factor;panY=dy-(dy-panY)*factor;zoom=next;markCustom();applyView()},{passive:false});
+new ResizeObserver(applyView).observe(stage);
 async function full(){try{if(document.fullscreenElement)await document.exitFullscreen();else await stage.requestFullscreen()}catch(e){toast(e.message)}}
-function show(){stage.classList.remove('hide-ui')}function hide(){if(stream)stage.classList.add('hide-ui')}
-stage.addEventListener('mousemove',e=>{const r=toolbar.getBoundingClientRect();const trigger=e.clientY<=Math.max(22,stage.classList.contains('hide-ui')?34:r.bottom+6);if(trigger)show();else hide()});stage.addEventListener('mouseleave',hide);toolbar.addEventListener('mouseenter',show);toolbar.addEventListener('mouseleave',e=>{if(e.clientY>toolbar.getBoundingClientRect().bottom+4)hide()});
-$('start').onclick=start;$('stop').onclick=stop;$('record').onclick=startRecording;$('recordStop').onclick=stopRecording;$('fit').onchange=()=>{centerView();applyFit()};$('zoom').oninput=applyZoom;$('focus').onchange=setFocus;$('center').onclick=centerView;$('reset').onclick=resetView;$('fullscreen').onclick=full;video.ondblclick=full;document.addEventListener('fullscreenchange',()=>{$('fullscreen').textContent=document.fullscreenElement?'退出全屏':'全屏'});document.addEventListener('keydown',e=>{if(['INPUT','SELECT','BUTTON'].includes(document.activeElement.tagName))return;if(e.key.toLowerCase()==='f')full();const move={ArrowLeft:[-50,0],ArrowRight:[50,0],ArrowUp:[0,-50],ArrowDown:[0,50]}[e.key];if(move&&stream){e.preventDefault();panX+=move[0];panY+=move[1];markCustom();applyView()}});navigator.mediaDevices?.addEventListener('devicechange',enumerate);video.addEventListener('loadedmetadata',()=>{info();applyView()});window.addEventListener('beforeunload',e=>{if(recSession||recPreparing){e.preventDefault();e.returnValue=''}else stopPreviewOnly()});updateRecordButtons();enumerate();
-</script></body></html>
+function show(){stage.classList.remove('hide-ui')}function hide(){if(stream&&!toolbarLocked)stage.classList.add('hide-ui')}
+stage.addEventListener('mousemove',e=>{if(toolbar.contains(e.target)){pointerAtTop=true;show();return}const r=toolbar.getBoundingClientRect();pointerAtTop=e.clientY<=Math.max(26,stage.classList.contains('hide-ui')?34:r.bottom+5);if(pointerAtTop)show();else hide()});
+stage.addEventListener('mouseleave',()=>{pointerAtTop=false;hide()});toolbar.addEventListener('mouseenter',()=>{pointerAtTop=true;show()});toolbar.addEventListener('mouseleave',e=>{if(e.clientY>toolbar.getBoundingClientRect().bottom+4){pointerAtTop=false;hide()}});
+function recordFilename(){const d=new Date(),p=n=>String(n).padStart(2,'0');return 'USB_Capture_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+'.webm'}
+function recordElapsed(ms){const t=Math.floor(ms/1000),p=n=>String(n).padStart(2,'0');return p(Math.floor(t/3600))+':'+p(Math.floor(t/60)%60)+':'+p(t%60)}
+function updateRecordClock(){if(recSession)$('recordTime').textContent=recordElapsed(performance.now()-recSession.startAt)}
+function recorderMime(){for(const mime of ['video/webm;codecs=vp8','video/webm'])if(MediaRecorder.isTypeSupported(mime))return mime;return ''}
+async function startRecording(){if(!stream||recSession||recPreparing)return;if(typeof MediaRecorder==='undefined'){toast('当前浏览器不支持 MediaRecorder');return}const mime=recorderMime();if(!mime){toast('当前浏览器不支持 WebM 录制');return}const source=stream,filename=recordFilename();let writer=null;recPreparing=true;updateRecordButtons();try{
+ if(typeof window.showSaveFilePicker==='function'){
+  const handle=await window.showSaveFilePicker({suggestedName:filename,types:[{description:'WebM 视频',accept:{'video/webm':['.webm']}}],excludeAcceptAllOption:true});writer=await handle.createWritable()
+ }else toast('未找到文件保存接口，录制停止后将通过浏览器下载 WebM（长时间录制会占用内存）');
+ if(stream!==source||!source.active){if(writer)await writer.abort();toast('视频已断开，请重新启动预览');return}
+ const next=new MediaRecorder(source,{mimeType:mime,videoBitsPerSecond:Number($('bitrate').value)});
+ let resolveDone;const done=new Promise(resolve=>{resolveDone=resolve});const session={writer,filename,mime,chunks:[],bytes:0,startAt:performance.now(),queue:Promise.resolve(),writeError:null,recordError:null,saving:false,done,resolveDone};
+ next.ondataavailable=e=>{if(!e.data||!e.data.size)return;session.bytes+=e.data.size;if(session.writer){session.queue=session.queue.then(()=>session.writer.write(e.data)).catch(error=>{session.writeError=error;if(next.state==='recording')void stopRecording()})}else session.chunks.push(e.data)};
+ next.onerror=e=>{session.recordError=e.error||new Error('录制编码失败');if(next.state==='recording')void stopRecording()};
+ next.onstop=()=>{void finishRecording(session)};recorder=next;recSession=session;next.start(1000);$('recordIndicator').classList.remove('hidden');updateRecordClock();recClock=setInterval(updateRecordClock,250);toast('已开始录制原始 HDMI 画面，不包含缩放和工具栏')
+ }catch(e){if(writer)try{await writer.abort()}catch(_){}if(recSession&&recorder?.state==='inactive'){recSession.resolveDone();recSession=null;recorder=null}if(e.name!=='AbortError')toast('开始录制失败：'+e.message)}finally{recPreparing=false;updateRecordButtons()}}
+function stopRecording(){if(!recSession)return Promise.resolve();const s=recSession;if(recorder&&recorder.state!=='inactive'){try{recorder.stop()}catch(e){s.recordError=e;void finishRecording(s)}}updateRecordButtons();return s.done}
+async function finishRecording(s){if(s.saving)return;s.saving=true;clearInterval(recClock);recClock=null;updateRecordClock();updateRecordButtons();try{await s.queue;if(s.writeError)throw s.writeError;if(!s.bytes)throw new Error('未收到有效视频数据');if(s.writer)await s.writer.close();else{const blob=new Blob(s.chunks,{type:s.mime});if(!blob.size)throw new Error('生成的视频文件为空');const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=s.filename;a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}toast((s.recordError?'录制意外中断，已尝试保存：':'录制完成：')+s.filename)}catch(e){if(s.writer)try{await s.writer.abort()}catch(_){}toast('录制保存失败：'+e.message)}finally{$('recordIndicator').classList.add('hidden');if(recSession===s){recSession=null;recorder=null}s.chunks=[];updateRecordButtons();s.resolveDone()}}
+// Wheel controls show one value only. Never open a dropdown.
+function syncWheelChoice(id){
+ const field=$(id),control=$('wheel-'+id);if(!control)return;
+ const option=field.selectedOptions[0];
+ control.textContent=option?.textContent||'—';
+ control.title=(id==='devices'?'设备：':'参数：')+(option?.textContent||'未选择')+' · 鼠标滚轮 / 单击 / ↑↓ 切换';
+ control.disabled=field.disabled||field.options.length<2;
+ control.setAttribute('aria-valuetext',option?.textContent||'未选择');
+}
+// Reconfigure resolution/FPS on the already-authorized track. Avoids closing the UVC stream
+// and prevents extra getUserMedia() prompts on routine parameter changes.
+async function applyCaptureConstraints(){
+ if(!liveRequested||recSession||recPreparing||!stream)return;
+ const source=stream,track=source.getVideoTracks()[0],epoch=++constraintsEpoch;
+ if(!track||track.readyState!=='live')return;
+ const r=$('resolution').value,wh=r==='auto'?null:r.split('x').map(Number),fps=$('fps').value;
+ const constraints={
+  ...(wh?{width:{ideal:wh[0]},height:{ideal:wh[1]}}:{}),
+  ...(fps==='auto'?{}:{frameRate:{ideal:Number(fps)}})
+ };
+ try{
+  await track.applyConstraints(constraints);
+  if(epoch!==constraintsEpoch||stream!==source)return;
+  info();applyView();
+  const actual=track.getSettings();
+  // Ideal constraints can be rounded by the camera/driver; show actual negotiated mode.
+  if(wh&&((actual.width&&actual.width!==wh[0])||(actual.height&&actual.height!==wh[1])))
+   toast('采集卡未提供所选分辨率，仍使用 '+(actual.width||'?')+'×'+(actual.height||'?'));
+  else if(fps!=='auto'&&actual.frameRate&&Math.abs(actual.frameRate-Number(fps))>1)
+   toast('采集卡实际帧率为 '+actual.frameRate.toFixed(1)+' FPS（请求 '+fps+' FPS）');
+ }catch(e){
+  if(epoch!==constraintsEpoch||stream!==source)return;
+  info();toast('无法直接应用采集参数：'+e.message+'；当前预览保持连接。');
+ }
+}
+function scheduleCaptureUpdate(id){
+ if(!liveRequested||recSession||recPreparing)return;
+ clearTimeout(reconfigureTimer);
+ // The selected value updates immediately; rapid wheel events are coalesced.
+ if(id==='devices')reconfigureTimer=setTimeout(()=>{reconfigureTimer=null;void start({keepView:true})},180);
+ else reconfigureTimer=setTimeout(()=>{reconfigureTimer=null;void applyCaptureConstraints()},100);
+}
+function wheelChoiceChange(id){
+ if(id==='fit'){centerView();applyFit();syncWheelChoice('focus')}
+ else if(id==='focus')setFocus();
+ else if(id==='devices'||id==='resolution'||id==='fps')scheduleCaptureUpdate(id);
+ // Bitrate is applied by MediaRecorder at the next start. During recording, it is locked.
+}
+function cycleWheelChoice(id,direction){
+ const field=$(id);if(!field||field.disabled||field.options.length<2)return;
+ const n=field.options.length,old=field.selectedIndex;
+ field.selectedIndex=(old+direction+n)%n;
+ syncWheelChoice(id);wheelChoiceChange(id);
+}
+for(const button of document.querySelectorAll('.wheel-choice')){
+ const id=button.dataset.source;
+ button.addEventListener('wheel',e=>{
+  e.preventDefault();e.stopPropagation();
+  if(e.deltaY===0||button.disabled)return;
+  const now=performance.now();if(now-Number(button.dataset.lastWheel||0)<85)return;
+  button.dataset.lastWheel=String(now);
+  cycleWheelChoice(id,e.deltaY>0?1:-1);
+ },{passive:false});
+ button.addEventListener('click',()=>cycleWheelChoice(id,1));
+ button.addEventListener('keydown',e=>{
+  if(['ArrowDown','ArrowRight','ArrowUp','ArrowLeft'].includes(e.key)){
+   e.preventDefault();cycleWheelChoice(id,['ArrowDown','ArrowRight'].includes(e.key)?1:-1)
+  }
+ });
+ syncWheelChoice(id);
+}
+$('wheel-zoom').addEventListener('wheel',e=>{
+ e.preventDefault();e.stopPropagation();
+ if(e.deltaY!==0)stepZoom(e.deltaY<0?1:-1);
+},{passive:false});
+$('wheel-zoom').addEventListener('click',()=>stepZoom(1));
+$('wheel-zoom').addEventListener('keydown',e=>{
+ if(['ArrowUp','ArrowRight','ArrowDown','ArrowLeft'].includes(e.key)){
+  e.preventDefault();stepZoom(['ArrowUp','ArrowRight'].includes(e.key)?1:-1);
+ }
+});
+$('start').onclick=()=>start();$('stop').onclick=stop;$('record').onclick=startRecording;$('recordStop').onclick=stopRecording;$('fit').onchange=()=>{centerView();applyFit();syncWheelChoice('fit');syncWheelChoice('focus')};$('focus').onchange=()=>{setFocus();syncWheelChoice('focus')};$('center').onclick=centerView;$('reset').onclick=resetView;$('fullscreen').onclick=full;video.ondblclick=full;
+document.addEventListener('fullscreenchange',()=>{$('fullscreen').textContent=document.fullscreenElement?'退出全屏':'全屏'});
+document.addEventListener('keydown',e=>{if(['INPUT','SELECT','BUTTON'].includes(document.activeElement?.tagName))return;if(e.key.toLowerCase()==='f')full();const move={ArrowLeft:[-50,0],ArrowRight:[50,0],ArrowUp:[0,-50],ArrowDown:[0,50]}[e.key];if(move&&stream){e.preventDefault();panX+=move[0];panY+=move[1];markCustom();applyView()}});
+navigator.mediaDevices?.addEventListener('devicechange',enumerate);
+video.addEventListener('loadedmetadata',()=>{info();applyView()});
+window.addEventListener('beforeunload',e=>{if(recSession||recPreparing){e.preventDefault();e.returnValue=''}else stopPreviewOnly()});
+updateRecordButtons();enumerate();
+// Keep the loopback-only static HTML host alive while this page is open.
+if(location.protocol==='http:'&&location.hostname==='127.0.0.1'&&location.port==='18764'){
+ const ping=()=>fetch('/__ping',{cache:'no-store'}).catch(()=>{});
+ ping();setInterval(ping,30000);
+}
+</script>
+</body>
+</html>
