@@ -1,4 +1,4 @@
-﻿# USB Capture Viewer V1.6.1 - Chrome app window WITH native Windows 11 Snap Layout support.
+﻿# USB Capture Viewer V1.6.2 RC1 - Chrome app window WITH native Windows 11 Snap Layout support.
 # No SetWindowLong border removal: keeps the native maximize button and resizable frame.
 param(
   [ValidateSet('Chrome','Edge','Auto')][string]$Browser='Chrome',
@@ -98,7 +98,7 @@ public static class UsbCaptureSnapNative {
   $handle=[IntPtr]::Zero
   for($i=0;$i -lt 80;$i++){
     Start-Sleep -Milliseconds 250
-    $handle=[UsbCaptureSnapNative]::FindTitle('USB Capture Snap V1.6.1')
+    $handle=[UsbCaptureSnapNative]::FindTitle('USB Capture Snap V1.6.2 RC1')
     if($handle -ne [IntPtr]::Zero){break}
   }
   if($handle -eq [IntPtr]::Zero){throw 'Browser opened but the capture viewer window was not found. Try closing previous capture viewer windows and run again.'}
